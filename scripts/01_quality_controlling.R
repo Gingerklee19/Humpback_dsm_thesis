@@ -8,6 +8,7 @@ library(tidyverse)
 library(basf)
 library(sf)
 library(dplyr)
+library(lubridate)
 
 # load/Import raw data (example, replace with your own)
 load(segmentdata.Rdata)
@@ -65,5 +66,24 @@ segs_f <- segs %>%
   st_drop_geometry() %>% 
   filter(Sightability %in% c("3","4","5")) %>% 
   mutate(Effort=Effort/2)
+
+# Adding month to segments
+segs_f$month <- month(segs_f$st)
+
+# Adding in day of the year to segments 
+segs_f$yday <- yday(segs_f$st)
+
+# Ordering the months to start with November to make the segments ordered more biologically reasonable 
+segs_f$month.x <- factor(segs_f$month,
+                         levels = c(11, 12, 1, 2, 3),
+                         labels = c("1", "2", "3", "4", "5"),
+                         ordered = TRUE)
+segs_f$month.n <- segs_f$month.x %>%
+  as.integer()
+
+# Ordering the days to start in Nov (Oct 31st to be exact)
+segs_f <- segs_f |>
+  mutate(yd = yday(st),  # original day of year
+         d = ifelse(yd > 180 & yd <= 365, yd - 365 + 62, yd + 62))
 
 save(obs_f, segs_f, file = "1.filtered_segs_obs.Rdata")
