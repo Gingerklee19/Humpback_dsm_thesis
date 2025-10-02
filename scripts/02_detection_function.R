@@ -7,7 +7,7 @@ library(Distance)
 load("1.filtered_segs_obs.Rdata")
 
 # set a truncation distance
-truncdist <- 15%
+truncdist <- "15%"
 
 # creating the detection funciton in both hr nd hn and plotting 
 ds_hr <- ds(
