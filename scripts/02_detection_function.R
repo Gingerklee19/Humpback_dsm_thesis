@@ -11,7 +11,7 @@ truncdist <- "15%"
 
 # creating the detection funciton in both hr nd hn and plotting 
 ds_hr <- ds(
-  data = obs_rp, 
+  data = obs_f, 
   truncation = truncdist, 
   key = "hr", 
   adjustment = NULL)
