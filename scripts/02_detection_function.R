@@ -59,3 +59,6 @@ ds_hn_sight <- ds(
 # Analysing the detection functions
 
 Distance::summarize_ds_models(ds_hr, ds_hn, ds_hr_seastate, ds_hn_seastate, ds_hr_sight, ds_hn_sight)
+
+# After analysizing models, save the best performing models to contnue forward to DSM modelling
+save(ds_hr, ds_hn, file = "2.detection_function.Rdata")
