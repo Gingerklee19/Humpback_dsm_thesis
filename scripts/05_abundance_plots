@@ -1,10 +1,15 @@
 # 05_abundance_plots
+# Creating abundace plots based on the top dsm model
+# following our aims we are using the spatial only model fisrt 
 
 # Load in required librarys
 library(ggplot2)
+library(ggrepel)
+library(ggspatial)
+library(shadowtext) 
 
 # Load in projection grid
-load("projection_grid.Rdata")
+load("4.proj_grid.Rdata")
 
 
 p  <- "+proj=laea +lat_0=-90 +lon_0=-57 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
@@ -33,6 +38,20 @@ coast <- marmap::as.SpatialGridDataFrame(bathy) |>
   stars::st_contour(breaks = c(0), contour_lines = FALSE) |> 
   st_transform(crs_laea)
 
+# Creating place names for my study area
+places <- data.frame(
+  name = c("Wilhelmina Bay", "Charlotte Bay", "Paradise Bay", 
+           "Lemaire Channel", "Anvers Island", "Brabant Island", 
+           "Andvord Bay", "Hughes Bay", "Flandres Bay"),
+  lon = c(-62.0, -61.52, -62.8, -63.6, -63.5, -62.4, -62.25, -60.87, -62.7),  
+  lat = c(-64.8, -64.7, -64.97, -65.2, -64.5, -64.2, -64.93, -64.4, -65.16)   
+)
+
+places_sf <- st_as_sf(places, coords = c("lon", "lat"), crs = 4326)
+places_sf <- st_transform(places_sf, st_crs(grid.poly))
+places_sf <- cbind(places_sf, st_coordinates(places_sf))
+
+
 # Plotting base models
 base_preds <- predict(dsm.xy.tw,
                       newdata = grid,
@@ -44,7 +63,7 @@ base_preds <- predict(dsm.xy.tw,
 grid.poly$predicted_base <- as.numeric(base_preds$fit)
 grid.poly$se_base <- as.numeric(base_preds$se.fit)
 
-# Add transct lines in the plot
+# Making sure the geometry is correct format 
 
 segs1 <- segs_f %>% st_drop_geometry() %>% 
   st_as_sf(coords=c("LonM","LatM"), remove =F, crs= 4326) %>% 
@@ -61,14 +80,25 @@ plot(segs_lines)
 grid.poly$area_km2 <- as.numeric(st_area(grid.poly)) / 1e6 # this is to make plot show whales/km2
 
 ggplot() +
-  geom_sf(data = grid.poly #%>% mutate(predicted_base= ifelse(predicted_base >5,5,predicted_base))
+  geom_sf(data = grid_poly 
           , aes(fill = predicted_base), color = NA) +
   geom_sf(data = coast %>% st_transform(4326), color = "black", fill = NA) +
-  geom_sf(data = segs1 , color = "black", size = 0.5) +
-  geom_sf(data = obs1, color = "red") +
+  geom_sf(data = segs_1 , color = "black", size = 0.5) +
+  geom_sf(data = obs_1, pch = 21, bg = "cyan", col = "black", size = 1.8) +
   coord_sf(crs = crs_laea) +
-  scale_fill_viridis_c(name = "Abundance", option = "plasma") +
-  labs(title = "Predicted Abundance from Base DSM",
+  scale_fill_viridis_c(name = "Predicted density (whales/km²)", option = "plasma") +
+  labs(title = "Predicted Abundance from Spatial DSM",
        subtitle = "Model: Tweedie + s(x,y)",
        fill = "Abundance") +
+  geom_shadowtext(
+    data = places_sf,
+    aes(x = X, y = Y, label = name),
+    color = "darkblue",
+    bg.color = "white",      
+    bg.r = 0.1,             
+    fontface = "bold",
+    size = 3
+  )+
   theme_minimal()
+
+# 
