@@ -66,4 +66,4 @@ segs_f <- segs %>%
   filter(Sightability %in% c("3","4","5")) %>% 
   mutate(Effort=Effort/2)
 
-
+save(obs_f, segs_f, file = "1.filtered_segs_obs.Rdata")
