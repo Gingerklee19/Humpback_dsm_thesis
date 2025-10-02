@@ -100,4 +100,4 @@ plot(grid) # this is the center points of the grid
 plot(grid.poly, add=T) # these are the squares. I have cut out the weddell. 
 grid
 
-save(grid_points, grid_poly, file = "4.proj_grid.Rdata")
+save(grid, grid.poly, file = "4.proj_grid.Rdata")
