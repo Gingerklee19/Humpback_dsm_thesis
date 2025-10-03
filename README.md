@@ -4,9 +4,9 @@ Original data is not included due to restrictions, but the repository contains s
 
 ## Repository Contents
 - **scripts/** – R scripts for data cleaning, detection functions, DSMs, and visualisation  
-- **results/** – figures and model summaries  
-- **docs/** – extended methods, results, and project notes  
-- **data/** – placeholder folder for input data (not included)  
+- **results/** – thesis figures
+- **Suplementary Materials/** 
+ 
 
 ## Methods Summary
 The analysis follows five main stages:
