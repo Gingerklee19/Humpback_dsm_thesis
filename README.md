@@ -3,9 +3,9 @@ This repository contains code and supporting materials for my Master's thesis in
 Original data is not included due to restrictions, but the repository contains scripts, workflow documentation, and example outputs.
 
 ## Repository Contents
-- **scripts/** – R scripts for data cleaning, detection functions, DSMs, and visualisation  
-- **results/** – thesis figures
-- **Suplementary Materials/** 
+- **Scripts/** – R scripts for data cleaning, detection functions, DSMs, and visualisation  
+- **Results/** – Thesis figures
+- **Sup-Mat/** – Suplematry Materials to support results and methods 
  
 
 ## Methods Summary
