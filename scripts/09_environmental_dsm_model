@@ -1,0 +1,14 @@
+# 09_environmental_analysis.Rdata
+# Exploring the environmental variables and creating dsm models
+
+# Load required libraries
+library(sf)
+library(dplyr)
+library(tidyverse)
+library(Distance)
+library(dsm)
+library(mgcv)
+library(lubridate)
+
+# Load in segment and observation data with enviros attached and reporjected
+load("08_reproj_enviro_data.Rdata")
