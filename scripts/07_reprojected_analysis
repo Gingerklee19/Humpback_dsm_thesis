@@ -21,7 +21,7 @@
 load("06_reprojected_data.Rdata")  # Contains grid_rp_points, grid_rp_poly, segs_rp, obs_rp
 
 # Load detection function from script 02
-load("02_best_detection_function.Rdata") 
+load("2.detection_function.Rdata") 
 
 # initial viewing of new reprojected data
 # making another table of survey effort which can be compared to the table created in 01
