@@ -72,15 +72,10 @@ segs1 <- segs_f %>% st_drop_geometry() %>%
 obs1 <- obs_f %>% st_as_sf(coords=c("lon","lat"), remove =F, crs= 4326) %>% 
   st_transform(st_crs(grid))
 
-# createing seg lines
-segs_lines <-segs_f
-st_geometry(segs_lines) <-"geometry"
-plot(segs_lines)
-
 grid.poly$area_km2 <- as.numeric(st_area(grid.poly)) / 1e6 # this is to make plot show whales/km2
 
 ggplot() +
-  geom_sf(data = grid_poly 
+  geom_sf(data = grid.poly 
           , aes(fill = predicted_base), color = NA) +
   geom_sf(data = coast %>% st_transform(4326), color = "black", fill = NA) +
   geom_sf(data = segs_1 , color = "black", size = 0.5) +
@@ -101,4 +96,61 @@ ggplot() +
   )+
   theme_minimal()
 
-# 
+
+# ============================
+#  Adding in Month as a factor
+# ============================
+
+month_levels <- c("1" = "Nov", "2" = "Dec", "3" = "Jan", "4" = "Feb", "5" = "Mar")
+
+for (m in month_levels) {
+  grid$month.x <- factor(m, levels = month_levels)
+  
+  pred <- predict(dsm.xy.fmonth.tw, newdata = grid, off.set = grid$area, 
+                  type = "response", se.fit = FALSE)
+  
+  grid.poly[, paste0("month", m)] <- as.vector(pred) / (grid$area / 1e6)
+}
+
+# Creating observations to match each month we are plotting 
+# First, we need to join obs_f with segs_f to get the month information
+obs_with_month <- obs_f %>%
+  left_join(segs_f %>% select(Sample.Label, month.x), by = "Sample.Label")
+
+
+obs_long <- obs_with_month %>%
+  filter(!is.na(month.x)) %>%
+  st_as_sf(coords=c("lon","lat"), remove =F, crs= 4326) %>% 
+  st_transform(st_crs(grid)) %>%
+  mutate(month = case_when(
+    month.x == "1" ~ "Nov",
+    month.x == "2" ~ "Dec", 
+    month.x == "3" ~ "Jan",
+    month.x == "4" ~ "Feb",
+    month.x == "5" ~ "Mar"
+  )) %>%
+  mutate(month = factor(month, levels = c("Nov", "Dec", "Jan", "Feb", "Mar")))
+
+
+# Define month labels for plotting
+month_labels <- c("1" = "Nov", "2" = "Dec", "3" = "Jan", "4" = "Feb", "5" = "Mar")
+
+grid.poly %>% dplyr::select(month1:month5) %>% 
+  pivot_longer(cols = month1:month5,
+               names_to = "month",
+               values_to = "pred") %>% 
+  mutate(month = gsub("month", "", month),
+         month = factor(month, 
+                        levels = c("1","2","3","4","5"),
+                        labels = month_labels)) %>% 
+  ggplot() +
+  geom_sf( aes(fill =  pred ), color = NA) +
+  geom_sf(data = coast, color = "black", fill = NA) +
+  geom_sf(data = obs_long, pch = 21, bg = "cyan", col = "black", size = 1.8) +
+  coord_sf(crs = crs_laea) +
+  scale_fill_viridis_c(name = "Density (whales/km²)", option = "plasma") +
+  labs(title = paste("Predicted Density by Month")) +
+  theme_minimal()+
+  facet_wrap(~month)
+
+# After looking at these plots we can see the spatial hotposts and densties
