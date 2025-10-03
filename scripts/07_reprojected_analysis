@@ -23,22 +23,187 @@ load("06_reprojected_data.Rdata")  # Contains grid_rp_points, grid_rp_poly, segs
 # Load detection function from script 02
 load("02_best_detection_function.Rdata") 
 
+# initial viewing of new reprojected data
+# making another table of survey effort which can be compared to the table created in 01
+survey_effort_summary <- obs_rp %>%
+  st_drop_geometry() %>%
+  mutate(vessel = str_extract(voy_id, "(?<=_)[A-Za-z]+_[A-Za-z]+")) %>%
+  group_by(Season, vessel, voy_id) %>%
+  summarise(
+    total_whales = sum(size, na.rm = TRUE),
+    sightings = n(),   # count number of rows (sightings) per voyage
+    .groups = "drop"
+  ) %>%
+  group_by(Season, vessel) %>%
+  summarise(
+    voyages = n_distinct(voy_id),
+    total_whales = sum(total_whales),
+    total_sightings = sum(sightings),  # sum across voyages
+    .groups = "drop"
+  ) %>%
+  arrange(Season, vessel)
+
+survey_effort_summary
+
 # Model re-running
 
 # Re-run key DSM models with reprojected data
 # Base spatial model
 dsm.xy.tw.rp <- dsm(count ~ s(x, y), ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.tw.rp, plot.type="contour", view=c("x","y"), asp=1, type="response", contour.col="black", n.grid=100)
 
 # Temporal model
 dsm.xy.tw.monthx.rp <- dsm(count ~ s(x, y) + month.x, ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.tw.monthx.rp, plot.type="contour", view=c("x","y"), asp=1, type="response", contour.col="black", n.grid=100)
 
 # Negative Binomial comparison
-dsm.xy.nb.rp <- dsm(count ~ s(x, y), best_ds, segs_rp, obs_rp, family = nb(), method = "REML")
+dsm.xy.nb.rp <- dsm(count ~ s(x, y), ds_hr, segs_rp, obs_rp, family = nb(), method = "REML")
+vis.gam(dsm.xy.nb.rp, plot.type="contour", view=c("x","y"), asp=1, type="response", contour.col="black", n.grid=100)
 
-# Compare models before and after reprojection
-comparison_table <- data.frame(
-  Model = c("Original", "Reprojected"),
-  AIC = c(AIC_original, AIC_reprojected),
-  Deviance_Explained = c(dev_original, dev_reprojected),
-  Convergence = c(converged_original, converged_reprojected)
+
+#exploring an interaction model
+# =========================
+# BY = MONTH.X
+# =========================
+par(mfrow = c(2,3))
+dsm.xy.tw.bymonth <- dsm(count ~ s(x, y, by = month.x) + month.x, ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.tw.bymonth, plot.type="contour", view=c("x","y"), cond = list(month.x = "1"), type="response", contour.col="black", n.grid=100)
+plot(segs_rp %>% filter(month.x == "1"), add = T)
+plot(obs_rp %>% filter(month.x == "1"), add = T, pch= 21, cex = 1.5, bg = "purple")
+
+vis.gam(dsm.xy.tw.bymonth, plot.type="contour", view=c("x","y"), cond = list(month.x = "2"), type="response", contour.col="black", n.grid=100)
+plot(segs_rp %>% filter(month.x == "2"), add = T)
+plot(obs_rp %>% filter(month.x == "2"), add = T, pch= 21, cex = 1.5, bg = "purple")
+
+vis.gam(dsm.xy.tw.bymonth, plot.type="contour", view=c("x","y"), cond = list(month.x = "3"), type="response", contour.col="black", n.grid=100)
+plot(segs_rp %>% filter(month.x == "3"), add = T)
+plot(obs_rp %>% filter(month.x == "3"), add = T, pch= 21, cex = 1.5, bg = "purple")
+
+vis.gam(dsm.xy.tw.bymonth, plot.type="contour", view=c("x","y"), cond = list(month.x = "4"), type="response", contour.col="black", n.grid=100)
+plot(segs_rp %>% filter(month.x == "4"), add = T)
+plot(obs_rp %>% filter(month.x == "4"), add = T, pch= 21, cex = 1.5, bg = "purple")
+
+vis.gam(dsm.xy.tw.bymonth, plot.type="contour", view=c("x","y"), cond = list(month.x = "5"), type="response", contour.col="black", n.grid=100)
+plot(segs_rp %>% filter(month.x == "5"), add = T)
+plot(obs_rp %>% filter(month.x == "5"), add = T, pch= 21, cex = 1.5, bg = "purple")
+
+# Further understanding these monthly models
+table(obs_rp$month.x)
+table(segs_rp$month.x)
+
+# ==================================================================================
+# CREATE SEASONAL GROUPINGS
+# ==================================================================================
+
+# Reproject segments with seasonal grouping
+segs_rp_grouped <- segs_rp %>% 
+  mutate(month_group = case_when(
+    m %in% c(11, 12) ~ "Early_Summer",  # Nov-Dec
+    m %in% c(1, 2, 3) ~ "Peak_Summer"   # Jan-Mar
+  )) %>%
+  mutate(month_group = factor(month_group, 
+                              levels = c("Early_Summer", "Peak_Summer"),
+                              labels = c("Early Summer\n(Nov-Dec)", "Peak Summer\n(Jan-Mar)"))) %>%
+  mutate(x = st_coordinates(geometry)[,1],
+         y = st_coordinates(geometry)[,2],
+         survey_date = as.Date(st))
+
+# Reproject observations with seasonal grouping
+obs_rp_grouped <- obs_rp %>% 
+  mutate(month_group = case_when(
+    m %in% c(11, 12) ~ "Early_Summer",  # Nov-Dec
+    m %in% c(1, 2, 3) ~ "Peak_Summer"   # Jan-Mar
+  )) %>%
+  mutate(month_group = factor(month_group, 
+                              levels = c("Early_Summer", "Peak_Summer"),
+                              labels = c("Early Summer\n(Nov-Dec)", "Peak Summer\n(Jan-Mar)"))) %>%
+  mutate(x = st_coordinates(geometry)[,1],
+         y = st_coordinates(geometry)[,2],
+         survey_date = as.Date(st))
+
+# ==================================================================================
+# EXPLORE GROUPED DATA
+# ==================================================================================
+
+table(obs_rp_grouped$month_group)
+
+
+table(segs_rp_grouped$month_group)
+
+segs_rp_grouped %>% 
+  st_drop_geometry() %>% 
+  group_by(month_group) %>% 
+  summarise(days = n_distinct(survey_date))
+
+segs_rp_grouped %>% 
+  st_drop_geometry() %>% 
+  group_by(month_group) %>% 
+  summarise(total_effort_km = sum(Effort))
+
+# ==================================================================================
+# FIT GROUPED SEASONAL MODEL
+# ==================================================================================
+
+# Model with spatial-seasonal interaction
+dsm.xy.tw.month_grouped <- dsm(count ~ s(x, y, by = month_group) + month_group, 
+                               ds_hr, segs_rp_grouped, obs_rp_grouped, 
+                               family = tw(), method = "REML")
+
+# Print model summary
+summary(dsm.xy.tw.month_grouped)
+
+# Model diagnostics
+gam.check(dsm.xy.tw.month_grouped)
+
+
+
+# creating a comparison table to see if there is any difference between original models
+comparison_original_vs_reprojected <- data.frame(
+  Model_Type = c("Original Base", "Reprojected Base", 
+                 "Original Temporal", "Reprojected Temporal"),
+  Dataset = c("Original Grid", "Reprojected Grid",
+              "Original Grid", "Reprojected Grid"),
+  AIC = c(AIC(dsm.xy.tw), AIC(dsm.xy.tw.rp),
+          AIC(dsm.xy.fmonth.tw), AIC(dsm.xy.tw.monthx.rp)),
+  Deviance_Explained = c(round(summary(dsm.xy.tw)$dev.expl * 100, 2),
+                         round(summary(dsm.xy.tw.rp)$dev.expl * 100, 2),
+                         round(summary(dsm.xy.fmonth.tw)$dev.expl * 100, 2),
+                         round(summary(dsm.xy.tw.monthx.rp)$dev.expl * 100, 2)),
+  Notes = c("South Pole centered", "Peninsula aligned",
+            "South Pole centered", "Peninsula aligned")
 )
+
+print("=== ORIGINAL vs REPROJECTED COMPARISON ===")
+print(comparison_original_vs_reprojected)
+
+# ==================================================================================
+# comparing Reprojected Models
+# ==================================================================================
+
+# Just compare the reprojected models against each other
+
+
+model_comparison_reprojected <- data.frame(
+  Model_Name = c("Base Spatial (TW)", 
+                 "Temporal (TW)", 
+                 "Negative Binomial", 
+                 "By Month Interaction (TW)",
+                 "Seasonal Grouped (TW)"),
+  Formula = c("count ~ s(x, y)",
+              "count ~ s(x, y) + month.x", 
+              "count ~ s(x, y)",
+              "count ~ s(x, y, by = month.x) + month.x",
+              "count ~ s(x, y, by = month_group) + month_group"),
+  Family = c("Tweedie", "Tweedie", "NB", "Tweedie", "Tweedie"),
+  AIC = c(AIC(dsm.xy.tw.rp),
+          AIC(dsm.xy.tw.monthx.rp),
+          AIC(dsm.xy.nb.rp),
+          AIC(dsm.xy.tw.bymonth),
+          AIC(dsm.xy.tw.month_grouped)),
+  Deviance_Explained = c(round(summary(dsm.xy.tw.rp)$dev.expl * 100, 2),
+                         round(summary(dsm.xy.tw.monthx.rp)$dev.expl * 100, 2),
+                         round(summary(dsm.xy.nb.rp)$dev.expl * 100, 2),
+                         round(summary(dsm.xy.tw.bymonth)$dev.expl * 100, 2),
+                         round(summary(dsm.xy.tw.month_grouped)$dev.expl * 100, 2))
+)
+model_comparison_reprojected
