@@ -62,4 +62,4 @@ obs_rp <- obs_f%>%
   mutate(x = st_coordinates(geometry)[,"X"],
          y = st_coordinates(geometry)[,"Y"])
 
-save(grid_rp_points, grid_rp_poly, segs_rp, obs_rp, file = "6_re_proj_grid_segs_obs.Rdata")
+save(grid_rp_points, grid_rp_poly, segs_rp, obs_rp, file = "06_reprojected_data.Rdata.Rdata")
