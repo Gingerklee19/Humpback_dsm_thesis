@@ -1,0 +1,44 @@
+# 07_reprojected_analysis.R
+# DSM Analysis with Reprojected Data - Validation and Comparison
+
+# PURPOSE:
+# This script re-runs the DSM models using the reprojected spatial data from script 06
+# to validate that the coordinate system change improved model performance and to generate
+# final abundance estimates using the biologically relevant projection.
+
+# MODELS TO RE-RUN:
+# Based on script 03 (initial DSM models), we will re-run:
+# 1. Base spatial model: count ~ s(x, y) (Tweedie family)
+# 2. Temporal models: count ~ s(x, y) + month.x (Tweedie family)
+
+# EXPECTED IMPROVEMENTS:
+# - Better spatial smoothing due to aligned coordinate system
+# - More interpretable spatial patterns
+# - Improved model convergence
+# - Better visualization of results
+
+# Load in required data sets
+load("06_reprojected_data.Rdata")  # Contains grid_rp_points, grid_rp_poly, segs_rp, obs_rp
+
+# Load detection function from script 02
+load("02_best_detection_function.Rdata") 
+
+# Model re-running
+
+# Re-run key DSM models with reprojected data
+# Base spatial model
+dsm.xy.tw.rp <- dsm(count ~ s(x, y), ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+
+# Temporal model
+dsm.xy.tw.monthx.rp <- dsm(count ~ s(x, y) + month.x, ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+
+# Negative Binomial comparison
+dsm.xy.nb.rp <- dsm(count ~ s(x, y), best_ds, segs_rp, obs_rp, family = nb(), method = "REML")
+
+# Compare models before and after reprojection
+comparison_table <- data.frame(
+  Model = c("Original", "Reprojected"),
+  AIC = c(AIC_original, AIC_reprojected),
+  Deviance_Explained = c(dev_original, dev_reprojected),
+  Convergence = c(converged_original, converged_reprojected)
+)
