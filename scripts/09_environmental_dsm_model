@@ -12,3 +12,239 @@ library(lubridate)
 
 # Load in segment and observation data with enviros attached and reporjected
 load("08_reproj_enviro_data.Rdata")
+load ("02.detection_function.Rdata")
+
+# seeing what envrio col names are ect.
+env_cols <- names(segs_rp)[sapply(segs_rp, is.numeric)]
+# Remove non-environmental columns
+env_cols <- env_cols[!env_cols %in% c("x", "y", "Effort", "count", "month", "yday", "seg_id")]
+print(env_cols)
+
+
+
+segs_with_env <- segs_with_env %>%
+  mutate(
+    
+    d.coast = d.coast |> as.numeric()/10^3,
+    
+    d.ice15 = ifelse(is.na(ice) | ice >= 15, 
+                     d.ice15*(-1), d.ice15)/10^3,
+    
+    d.icelag15 = ifelse(is.na(icelag) | icelag >= 15, 
+                        d.icelag15*(-1), d.icelag15)/10^3
+  )
+#  D.COAST
+dsm.monthx.dcoast <- dsm(count ~ month.x + d.coast,
+                         ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+dsm.monthn.dcoast.smooth <- dsm(count ~ s(month.n, k = 5) + s(d.coast, k = 5),
+                                ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+plot(dsm.monthn.dcoast.smooth)
+# spatial added
+dsm.xy.monthx.dcoast <- dsm(count ~ s(x, y) + month.x +d.coast,
+                            ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthx.dcoast, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+
+dsm.xy.monthn.dcoast.smooth <- dsm(count ~ s(x, y) + s(month.n, k = 5) + s(d.coast, k = 5),
+                                   ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthn.dcoast.smooth, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+plot(dsm.xy.monthn.dcoast.smooth)
+
+## D.ISOBAR
+dsm.monthx.disobar <- dsm(count ~ month.x + d.isobar,
+                          ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+dsm.monthn.disobar.smooth <- dsm(count ~ s(month.n, k = 5) + s(d.isobar, k = 5),
+                                 ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+plot(dsm.monthn.disobar.smooth)
+#spatial
+dsm.xy.monthx.disobar <- dsm(count ~ s(x, y) + month.x +d.isobar,
+                             ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthx.disobar, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+
+dsm.xy.monthn.disobar.smooth <- dsm(count ~ s(x, y) + s(month.n, k = 5) + s(d.isobar, k = 5),
+                                    ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthn.disobar.smooth, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+plot(dsm.xy.monthn.disobar.smooth)
+
+## SST
+dsm.xy.sst <- dsm(count ~ s(x,y) + sst,
+                  ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+dsm.monthx.sst <- dsm(count ~ month.x + sst,
+                      ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+dsm.monthn.sst.smooth <- dsm(count ~ s(month.n, k = 5) + s(sst, k = 5),
+                             ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+par(mfrow = c(2,2))
+plot(dsm.monthn.sst.smooth)
+#spatial
+dsm.xy.monthx.sst <- dsm(count ~ s(x, y) + month.x + sst,
+                         ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthx.sst, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+
+dsm.xy.monthn.sst.smooth <- dsm(count ~ s(x, y) + s(month.n, k = 5) + s(sst, k = 5),
+                                ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthn.sst.smooth, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+plot(dsm.xy.monthn.sst.smooth)
+
+
+dsm.xy.monthx.ssst <- dsm(count ~ s(x, y) + month.x + s(sst),
+                          ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+plot(dsm.xy.monthx.ssst)
+
+### SSTA
+dsm.xy.ssta <- dsm(count ~ s(x,y) + ssta,
+                   ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+dsm.monthx.ssta <- dsm(count ~ month.x + ssta,
+                       ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+dsm.monthn.ssta.smooth <- dsm(count ~ s(month.n, k = 5) + s(ssta, k = 5),
+                              ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+plot(dsm.monthn.ssta.smooth)
+#spatial
+dsm.xy.monthx.ssta <- dsm(count ~ s(x, y) + month.x + ssta,
+                          ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthx.ssta, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+
+dsm.xy.monthn.ssta.smooth <- dsm(count ~ s(x, y) + s(month.n, k = 5) + s(ssta, k = 5),
+                                 ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthn.ssta.smooth, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+plot(dsm.xy.monthx.ssta)
+
+dsm.xy.monthx.sssta <- dsm(count ~ s(x, y) + month.x + s(ssta),
+                           ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+plot(dsm.xy.monthx.sssta)
+summary(dsm.xy.monthx.sssta)
+summary(dsm.xy.monthx.ssta)
+
+## ICE
+dsm.xy.ice<- dsm(count ~ s(x,y) + ice,
+                 ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+dsm.monthx.ice <- dsm(count ~ month.x + ice,
+                      ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+dsm.monthn.ice.smooth <- dsm(count ~ s(month.n, k = 5) + s(ice, k = 5),
+                             ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+plot(dsm.monthn.ice.smooth)
+#spatial
+dsm.xy.monthx.ice <- dsm(count ~ s(x, y) + month.x + ice,
+                         ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthx.ice, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+
+dsm.xy.monthn.ice.smooth <- dsm(count ~ s(x, y) + s(month.n, k = 5) + s(ice, k = 5),
+                                ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthn.ice.smooth, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+plot(dsm.xy.monthn.ice.smooth)
+
+dsm.xy.monthx.sice <- dsm(count ~ s(x, y) + month.x + s(ice),
+                          ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+plot(dsm.xy.monthx.sice)
+
+## D.ICE15
+dsm.monthx.dice15 <- dsm(count ~ month.x + d.ice15,
+                         ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+dsm.monthn.dice15.smooth <- dsm(count ~ s(month.n, k = 5) + s(d.ice15, k = 5),
+                                ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+plot(dsm.monthn.dice15.smooth)
+#spatial
+dsm.xy.monthx.dice15 <- dsm(count ~ s(x, y) + month.x + d.ice15,
+                            ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthx.dice15, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+
+dsm.xy.monthn.dice15.smooth <- dsm(count ~ s(x, y) + s(month.n, k = 5) + s(d.ice15, k = 5),
+                                   ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthn.dice15.smooth, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+plot(dsm.xy.monthn.dice15.smooth)
+
+## D.ICELAG15
+dsm.monthx.dicelag15 <- dsm(count ~ month.x + d.icelag15,
+                            ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+dsm.monthn.dicelag15.smooth <- dsm(count ~ s(month.n, k = 5) + s(d.icelag15, k = 5),
+                                   ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+plot(dsm.monthn.dicelag15.smooth)
+#spatial
+dsm.xy.monthx.dicelag15 <- dsm(count ~ s(x, y) + month.x + d.icelag15,
+                               ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthx.dicelag15, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+
+dsm.xy.monthn.dicelag15.smooth <- dsm(count ~ s(x, y) + s(month.n, k = 5) + s(d.icelag15, k = 5),
+                                      ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthn.dicelag15.smooth, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+plot(dsm.xy.monthn.dicelag15.smooth)
+
+## ICELAG
+dsm.monthx.icelag <- dsm(count ~ month.x + icelag,
+                         ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+dsm.monthn.icelag.smooth <- dsm(count ~ s(month.n, k = 5) + s(icelag, k = 5),
+                                ds_hr, segs_rp, obs_rp, family = tw(), method = "REML") 
+plot(dsm.monthn.icelag.smooth)
+#spatial
+dsm.xy.monthx.icelag <- dsm(count ~ s(x, y) + month.x + icelag,
+                            ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthx.icelag, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+
+dsm.xy.monthn.icelag.smooth <- dsm(count ~ s(x, y) + s(month.n, k = 5) + s(icelag, k = 5),
+                                   ds_hr, segs_rp, obs_rp, family = tw(), method = "REML")
+vis.gam(dsm.xy.monthn.icelag.smooth, plot.type = "contour", view = c("x", "y"), asp = 1, type = "response", contour.col = "black", n.grid = 100)
+plot(dsm.xy.monthn.icelag.smooth)
+
+
+######making a comparison table
+mod_results_tweedie <- data.frame(
+  "Model name" = c("dsm.xy.tw", "dsm.xy.hn.tw", "dsm.monthx.dcoast", "dsm.monthn.dcoast.smooth" ,"dsm.xy.monthx.dcoast", "dsm.xy.monthn.dcoast.smooth",
+                   "dsm.monthx.disobar", "dsm.monthn.disobar.smooth","dsm.xy.monthx.disobar", "dsm.xy.monthn.disobar.smooth",
+                   "dsm.monthx.sst", "dsm.monthn.sst.smooth","dsm.xy.monthx.sst", "dsm.xy.monthn.sst.smooth", 
+                   "dsm.monthx.ssta", "dsm.monthn.ssta.smooth","dsm.xy.monthx.ssta", "dsm.xy.monthn.ssta.smooth",
+                   "dsm.monthx.ice", "dsm.monthn.ice.smooth","dsm.xy.monthx.ice", "dsm.xy.monthn.ice.smooth",
+                   "dsm.monthx.dice15", "dsm.monthn.dice15.smooth", "dsm.xy.monthx.dice15", "dsm.xy.monthn.dice15.smooth", 
+                   "dsm.monthx.dicelag15", "dsm.monthn.dicelag15.smooth", "dsm.xy.monthx.dicelag15", "dsm.xy.monthn.dicelag15.smooth", 
+                   "dsm.monthx.icelag", "dsm.monthn.icelag.smooth","dsm.xy.monthx.icelag", "dsm.xy.monthn.icelag.smooth"),
+  "Description" = c("base model, tweedie",
+                    "half normal, tweedie",
+                    "factor, d.coast, tweedie",
+                    "smooth, d.coast, tweedie",
+                    "xy, factor, d.coast, tweedie",
+                    "xy, smooth, d.coast, tweedie",
+                    "factor, d.isobar, tweedie",
+                    "smooth, d.isobar, tweedie",
+                    "xy, factor, d.isobar, tweedie",
+                    "xy, smooth, d.isobar, tweedie",
+                    "factor, sst, tweedie",
+                    "smooth, sst, tweedie",
+                    "xy, factor, sst, tweedie",
+                    "xy, smooth, sst, tweedie",
+                    "factor, ssta, tweedie",
+                    "smooth, ssta, tweedie",
+                    "xy, factor, ssta, tweedie",
+                    "xy, smooth, ssta, tweedie",
+                    "factor, ice, tweedie",
+                    "smooth, ice, tweedie",
+                    "xy, factor, ice, tweedie",
+                    "xy, smooth, ice, tweedie",
+                    "factor, d.ice15, tweedie",
+                    "smooth, d.ice15, tweedie",
+                    "xy, factor, d.ice15, tweedie",
+                    "xy, smooth, d.ice15, tweedie",
+                    "factor, d.icelag15, tweedie",
+                    "smooth, d.icelag15, tweedie",
+                    "xy, factor, d.icelag15, tweedie",
+                    "xy, smooth, d.icelag15, tweedie",
+                    "factor, icelag, tweedie",
+                    "smooth, icelag, tweedie",
+                    "xy, factor, icelag, tweedie",
+                    "xy, smooth, icelag, tweedie"),
+  "Deviance explained" = unlist(lapply(
+    list(dsm.xy.tw, dsm.xy.hn.tw, dsm.monthx.dcoast, dsm.monthn.dcoast.smooth, dsm.xy.monthx.dcoast, dsm.xy.monthn.dcoast.smooth,
+         dsm.monthx.disobar, dsm.monthn.disobar.smooth, dsm.xy.monthx.disobar, dsm.xy.monthn.disobar.smooth, 
+         dsm.monthx.sst, dsm.monthn.sst.smooth, dsm.xy.monthx.sst, dsm.xy.monthn.sst.smooth, 
+         dsm.monthx.ssta, dsm.monthn.ssta.smooth, dsm.xy.monthx.ssta, dsm.xy.monthn.ssta.smooth, 
+         dsm.monthx.ice, dsm.monthn.ice.smooth, dsm.xy.monthx.ice, dsm.xy.monthn.ice.smooth,
+         dsm.monthx.dice15, dsm.monthn.dice15.smooth, dsm.xy.monthx.dice15, dsm.xy.monthn.dice15.smooth, 
+         dsm.monthx.dicelag15, dsm.monthn.dicelag15.smooth, dsm.xy.monthx.dicelag15, dsm.xy.monthn.dicelag15.smooth, 
+         dsm.monthx.icelag, dsm.monthn.icelag.smooth, dsm.xy.monthx.icelag, dsm.xy.monthn.icelag.smooth),
+    function(x) paste0(round(summary(x)$dev.expl * 100, 2), "%")
+  ))
+)
+library(knitr)
+kable(mod_results_tweedie, col.names=c("Model name", "Description", "Deviance explained"))
+AIC(dsm.xy.tw, dsm.xy.hn.tw, dsm.xy.monthx.dcoast, dsm.xy.monthn.dcoast.smooth,
+    dsm.xy.monthx.disobar, dsm.xy.monthn.disobar.smooth, dsm.xy.monthx.sst, dsm.xy.monthn.sst.smooth, 
+    dsm.xy.monthx.ssta, dsm.xy.monthn.ssta.smooth, dsm.xy.monthx.ice, dsm.xy.monthn.ice.smooth,
+    dsm.xy.monthx.dice15, dsm.xy.monthn.dice15.smooth, dsm.xy.monthx.dicelag15, dsm.xy.monthn.dicelag15.smooth, 
+    dsm.xy.monthx.icelag, dsm.xy.monthn.icelag.smooth)
+###from this ssta has the highest deviance and lowest AIC
